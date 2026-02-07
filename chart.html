@@ -218,10 +218,20 @@
                 leftDiv.appendChild(label);
 
                 const rightDiv = document.createElement('div');
+                rightDiv.style.display = 'flex';
+                rightDiv.style.alignItems = 'center';
+                rightDiv.style.gap = '4px';
+                
+                const dollarSign = document.createElement('span');
+                dollarSign.textContent = '$';
+                dollarSign.style.fontWeight = '600';
+                dollarSign.style.color = 'var(--accent)';
+                
                 const amt = document.createElement('input');
-                amt.type = 'number'; amt.min = 0; amt.step = '0.01'; amt.placeholder = '$ amount (leave empty for no)';
-                amt.style.width = '110px'; amt.style.marginLeft = '8px';
+                amt.type = 'number'; amt.min = 0; amt.step = '0.01'; amt.placeholder = 'amount';
+                amt.style.width = '100px'; amt.style.marginLeft = '0px';
                 amt.dataset.idx = idx;
+                rightDiv.appendChild(dollarSign);
                 rightDiv.appendChild(amt);
 
                 container.appendChild(leftDiv);
@@ -237,12 +247,25 @@
                 label.textContent = `Do you want to spend money on ${cat}? (enter amount if yes)`;
                 label.style.fontSize = '14px';
 
+                const inputWrapper = document.createElement('div');
+                inputWrapper.style.display = 'flex';
+                inputWrapper.style.alignItems = 'center';
+                inputWrapper.style.gap = '4px';
+
+                const dollarSign = document.createElement('span');
+                dollarSign.textContent = '$';
+                dollarSign.style.fontWeight = '600';
+                dollarSign.style.color = 'var(--accent)';
+
                 const amt = document.createElement('input');
-                amt.type = 'number'; amt.min = 0; amt.step = '0.01'; amt.placeholder = '$ amount (leave empty for no)'; amt.style.width = '110px'; amt.style.marginLeft = '8px';
+                amt.type = 'number'; amt.min = 0; amt.step = '0.01'; amt.placeholder = 'amount'; amt.style.width = '100px';
                 amt.dataset.idx = idx;
 
+                inputWrapper.appendChild(dollarSign);
+                inputWrapper.appendChild(amt);
+
                 container.appendChild(label);
-                container.appendChild(amt);
+                container.appendChild(inputWrapper);
             });
         }
 
@@ -284,9 +307,33 @@
                     const box = document.createElement('div');
                     box.className = 'debt-row';
                     box.style.display = 'flex'; box.style.gap = '8px'; box.style.alignItems = 'center';
+                    
                     const name = document.createElement('input'); name.placeholder = `Debt ${i} name`; name.style.width = '160px';
-                    const monthly = document.createElement('input'); monthly.type = 'number'; monthly.placeholder = 'monthly payment'; monthly.min = 0; monthly.step = '0.01'; monthly.style.width = '140px';
-                    const total = document.createElement('input'); total.type = 'number'; total.placeholder = 'total debt amount'; total.min = 0; total.step = '0.01'; total.style.width = '160px';
+                    
+                    const monthlyWrapper = document.createElement('div');
+                    monthlyWrapper.style.display = 'flex';
+                    monthlyWrapper.style.alignItems = 'center';
+                    monthlyWrapper.style.gap = '4px';
+                    const monthlyDollar = document.createElement('span');
+                    monthlyDollar.textContent = '$';
+                    monthlyDollar.style.fontWeight = '600';
+                    monthlyDollar.style.color = 'var(--accent)';
+                    const monthly = document.createElement('input'); monthly.type = 'number'; monthly.placeholder = 'monthly payment'; monthly.min = 0; monthly.step = '0.01'; monthly.style.width = '130px';
+                    monthlyWrapper.appendChild(monthlyDollar);
+                    monthlyWrapper.appendChild(monthly);
+                    
+                    const totalWrapper = document.createElement('div');
+                    totalWrapper.style.display = 'flex';
+                    totalWrapper.style.alignItems = 'center';
+                    totalWrapper.style.gap = '4px';
+                    const totalDollar = document.createElement('span');
+                    totalDollar.textContent = '$';
+                    totalDollar.style.fontWeight = '600';
+                    totalDollar.style.color = 'var(--accent)';
+                    const total = document.createElement('input'); total.type = 'number'; total.placeholder = 'total debt amount'; total.min = 0; total.step = '0.01'; total.style.width = '150px';
+                    totalWrapper.appendChild(totalDollar);
+                    totalWrapper.appendChild(total);
+                    
                     const payoff = document.createElement('span'); payoff.style.marginLeft = '8px'; payoff.style.color = '#555';
 
                     const updatePayoff = () => {
@@ -299,7 +346,7 @@
                     monthly.addEventListener('input', updatePayoff);
                     total.addEventListener('input', updatePayoff);
 
-                    box.appendChild(name); box.appendChild(monthly); box.appendChild(total); box.appendChild(payoff);
+                    box.appendChild(name); box.appendChild(monthlyWrapper); box.appendChild(totalWrapper); box.appendChild(payoff);
                     entriesDiv.appendChild(box);
                 }
             });
@@ -497,18 +544,31 @@
             $('summary').textContent = summary;
             $('result').style.display = 'block';
 
-            // show chart: Money Spent vs Money Leftover (using income as budget)
+            // show chart: Money Spent, Savings, and Money Leftover (using income as budget)
             const final_leftover = state.money_leftover;
-            const spent = Math.round((income - final_leftover)*100)/100;
+            const final_savings = state.savings;
+            const spent = Math.round((income - final_leftover - final_savings)*100)/100;
 
             $('expensesChart').style.display = 'block';
             const ctx = document.getElementById('expensesChart').getContext('2d');
             if (window.finalChart) window.finalChart.destroy();
+            
+            // Create chart with three slices
+            const chartLabels = final_savings > 0 
+                ? ['Money Spent', 'Savings', 'Money Leftover']
+                : ['Money Spent', 'Money Leftover'];
+            const chartData = final_savings > 0
+                ? [spent, final_savings, final_leftover]
+                : [spent, final_leftover];
+            const chartColors = final_savings > 0
+                ? ['#f97316', '#10b981', '#60a5fa']
+                : ['#f97316', '#10b981'];
+            
             window.finalChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: ['Money Spent', 'Money Leftover'],
-                    datasets: [{ data: [spent, final_leftover], backgroundColor: ['#ff4d4d', '#4CAF50'], borderColor: '#fff', borderWidth: 1 }]
+                    labels: chartLabels,
+                    datasets: [{ data: chartData, backgroundColor: chartColors, borderColor: '#fff', borderWidth: 2 }]
                 },
                 options: { responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: `Budget Breakdown (Budget: $${income})` } } }
             });
