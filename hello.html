@@ -1,5 +1,45 @@
+<!DOCTYPE html>
 <html>
-  <body>
-    <h1>Hello poop</h1>
-  </body>
+<head>
+    <style>
+        .chart-container {
+            width: 200px;
+            margin: 0 auto;
+            font-family: sans-serif;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"></script>   
+</head>
+<body>
+
+    <div>
+        <h1>Budget Dashboard</h1>
+
+    <div style="width: 500px; height: 500px">
+        <canvas id="budgetChart"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('budgetChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Rent', 'Food', 'Savings', 'THIS PURCHASE'],
+                datasets: [{
+                    data: [1200, 400, 500, 150], // You'll replace 150 with your scraped price!
+                    backgroundColor: ['#eee', '#ccc', '#aaa', '#FF0000'] // Red for the new purchase!
+                }]
+            },
+            options: {
+                plugins: {
+                    title: { display: true, text: 'Monthly Budget Projection' }
+                }
+            }
+        });
+    </script>
+
+    </div>
+
+
+</body>
 </html>
