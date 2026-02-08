@@ -1,7 +1,7 @@
 # 🏗️ Spendless Budgeter
 Stop impulse buys before they happen.
 
-##📋 Overview
+## 📋 Overview
 Mindfulness Budgeter is a Chrome Extension designed to break the "instant gratification" loop of online shopping. By dynamically detecting when a user is on a checkout page, the extension intercepts the transaction with a visual and auditory reality check. It calculates the impact of the current purchase against your monthly budget and visualizes it using a real-time generated chart.
 
 ## ✨ Key Features
