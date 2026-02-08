@@ -18,14 +18,12 @@ function saveStateExtensionData(value) {
     chrome.storage.local.set({ spendless_data : value }).then()
 }
 
-function loadStateExtensionData(key) {
-    chrome.storage.local.get([key]).then((result) => {
-       return result; 
-    });
+async function loadStateExtensionData(key) {
+    return chrome.storage.local.get([key]);
 }
 
 function resetStateExtensionData() {
-    saveStateExtensionData(0);
+    saveStateExtensionData(null);
 }
 
 const goal_allocations = {1: 0.8, 2: 0.3, 3: 0.5, 4: 0.7};
@@ -157,90 +155,90 @@ function updateWantsBudgetTracking(event) {
 }
 
 // Debts management: user is asked "Do you have any monthly debt payments? (y/n):"
-function showDebtsStep() {
-    const debtsList = $('debtsList');
-    debtsList.innerHTML = '';
+// function showDebtsStep() {
+//     const debtsList = $('debtsList');
+//     debtsList.innerHTML = '';
 
-    const question = document.createElement('div');
-    question.textContent = 'Enter your monthly debt payments (leave count 0 if none):';
-    debtsList.appendChild(question);
+//     const question = document.createElement('div');
+//     question.textContent = 'Enter your monthly debt payments (leave count 0 if none):';
+//     debtsList.appendChild(question);
 
-    const numDiv = document.createElement('div');
-    numDiv.style.marginTop = '8px';
-    const numLabel = document.createElement('label');
-    numLabel.textContent = 'How many debts do you have? ';
-    const numInput = document.createElement('input');
-    numInput.type = 'number'; numInput.min = 0; numInput.value = 0; numInput.style.width = '80px'; numInput.style.marginLeft = '8px';
-    numInput.id = 'debtsCount';
-    numDiv.appendChild(numLabel);
-    numDiv.appendChild(numInput);
-    debtsList.appendChild(numDiv);
+//     const numDiv = document.createElement('div');
+//     numDiv.style.marginTop = '8px';
+//     const numLabel = document.createElement('label');
+//     numLabel.textContent = 'How many debts do you have? ';
+//     const numInput = document.createElement('input');
+//     numInput.type = 'number'; numInput.min = 0; numInput.value = 0; numInput.style.width = '80px'; numInput.style.marginLeft = '8px';
+//     numInput.id = 'debtsCount';
+//     numDiv.appendChild(numLabel);
+//     numDiv.appendChild(numInput);
+//     debtsList.appendChild(numDiv);
 
-    const createBtn = document.createElement('button');
-    createBtn.type = 'button';
-    createBtn.textContent = 'Create Debt Entries';
-    createBtn.className = 'primary';
-    createBtn.style.marginTop = '8px';
-    debtsList.appendChild(createBtn);
+//     const createBtn = document.createElement('button');
+//     createBtn.type = 'button';
+//     createBtn.textContent = 'Create Debt Entries';
+//     createBtn.className = 'primary';
+//     createBtn.style.marginTop = '8px';
+//     debtsList.appendChild(createBtn);
 
-    const entriesDiv = document.createElement('div');
-    entriesDiv.style.display = 'flex'; entriesDiv.style.flexDirection = 'column'; entriesDiv.style.gap = '8px'; entriesDiv.style.marginTop = '8px';
-    debtsList.appendChild(entriesDiv);
+//     const entriesDiv = document.createElement('div');
+//     entriesDiv.style.display = 'flex'; entriesDiv.style.flexDirection = 'column'; entriesDiv.style.gap = '8px'; entriesDiv.style.marginTop = '8px';
+//     debtsList.appendChild(entriesDiv);
 
-    createBtn.addEventListener('click', () => {
-        entriesDiv.innerHTML = '';
-        const count = parseInt(numInput.value) || 0;
-        for (let i = 1; i <= count; i++) {
-            const box = document.createElement('div');
-            box.className = 'debt-row';
-            box.style.display = 'flex'; box.style.gap = '8px'; box.style.alignItems = 'center';
+//     createBtn.addEventListener('click', () => {
+//         entriesDiv.innerHTML = '';
+//         const count = parseInt(numInput.value) || 0;
+//         for (let i = 1; i <= count; i++) {
+//             const box = document.createElement('div');
+//             box.className = 'debt-row';
+//             box.style.display = 'flex'; box.style.gap = '8px'; box.style.alignItems = 'center';
 
-            const name = document.createElement('input'); name.placeholder = `Debt ${i} name`; name.style.width = '160px';
+//             const name = document.createElement('input'); name.placeholder = `Debt ${i} name`; name.style.width = '160px';
 
-            const monthlyWrapper = document.createElement('div');
-            monthlyWrapper.style.display = 'flex';
-            monthlyWrapper.style.alignItems = 'center';
-            monthlyWrapper.style.gap = '4px';
-            const monthlyDollar = document.createElement('span');
-            monthlyDollar.textContent = '$';
-            monthlyDollar.style.fontWeight = '600';
-            monthlyDollar.style.color = 'var(--accent)';
-            const monthly = document.createElement('input'); monthly.type = 'number'; monthly.placeholder = 'monthly payment'; monthly.min = 0; monthly.step = '0.01'; monthly.style.width = '130px';
-            monthlyWrapper.appendChild(monthlyDollar);
-            monthlyWrapper.appendChild(monthly);
+//             const monthlyWrapper = document.createElement('div');
+//             monthlyWrapper.style.display = 'flex';
+//             monthlyWrapper.style.alignItems = 'center';
+//             monthlyWrapper.style.gap = '4px';
+//             const monthlyDollar = document.createElement('span');
+//             monthlyDollar.textContent = '$';
+//             monthlyDollar.style.fontWeight = '600';
+//             monthlyDollar.style.color = 'var(--accent)';
+//             const monthly = document.createElement('input'); monthly.type = 'number'; monthly.placeholder = 'monthly payment'; monthly.min = 0; monthly.step = '0.01'; monthly.style.width = '130px';
+//             monthlyWrapper.appendChild(monthlyDollar);
+//             monthlyWrapper.appendChild(monthly);
 
-            const totalWrapper = document.createElement('div');
-            totalWrapper.style.display = 'flex';
-            totalWrapper.style.alignItems = 'center';
-            totalWrapper.style.gap = '4px';
-            const totalDollar = document.createElement('span');
-            totalDollar.textContent = '$';
-            totalDollar.style.fontWeight = '600';
-            totalDollar.style.color = 'var(--accent)';
-            const total = document.createElement('input'); total.type = 'number'; total.placeholder = 'total debt amount'; total.min = 0; total.step = '0.01'; total.style.width = '150px';
-            totalWrapper.appendChild(totalDollar);
-            totalWrapper.appendChild(total);
+//             const totalWrapper = document.createElement('div');
+//             totalWrapper.style.display = 'flex';
+//             totalWrapper.style.alignItems = 'center';
+//             totalWrapper.style.gap = '4px';
+//             const totalDollar = document.createElement('span');
+//             totalDollar.textContent = '$';
+//             totalDollar.style.fontWeight = '600';
+//             totalDollar.style.color = 'var(--accent)';
+//             const total = document.createElement('input'); total.type = 'number'; total.placeholder = 'total debt amount'; total.min = 0; total.step = '0.01'; total.style.width = '150px';
+//             totalWrapper.appendChild(totalDollar);
+//             totalWrapper.appendChild(total);
 
-            const payoff = document.createElement('span'); payoff.style.marginLeft = '8px'; payoff.style.color = '#555';
+//             const payoff = document.createElement('span'); payoff.style.marginLeft = '8px'; payoff.style.color = '#555';
 
-            const updatePayoff = () => {
-                const m = parseFloat(monthly.value) || 0;
-                const t = parseFloat(total.value) || 0;
-                const months = m > 0 ? (t / m) : Infinity;
-                payoff.textContent = isFinite(months) ? `Estimated payoff time: ${Math.round(months*10)/10} months` : 'Estimated payoff time: ∞';
-            };
+//             const updatePayoff = () => {
+//                 const m = parseFloat(monthly.value) || 0;
+//                 const t = parseFloat(total.value) || 0;
+//                 const months = m > 0 ? (t / m) : Infinity;
+//                 payoff.textContent = isFinite(months) ? `Estimated payoff time: ${Math.round(months*10)/10} months` : 'Estimated payoff time: ∞';
+//             };
 
-            monthly.addEventListener('input', updatePayoff);
-            total.addEventListener('input', updatePayoff);
+//             monthly.addEventListener('input', updatePayoff);
+//             total.addEventListener('input', updatePayoff);
 
-            box.appendChild(name); box.appendChild(monthlyWrapper); box.appendChild(totalWrapper); box.appendChild(payoff);
-            entriesDiv.appendChild(box);
-        }
-    });
+//             box.appendChild(name); box.appendChild(monthlyWrapper); box.appendChild(totalWrapper); box.appendChild(payoff);
+//             entriesDiv.appendChild(box);
+//         }
+//     });
 
-    // controls enabled by default (user inputs count)
-    numInput.disabled = false; createBtn.disabled = false;
-}
+//     // controls enabled by default (user inputs count)
+//     numInput.disabled = false; createBtn.disabled = false;
+// }
 
 // wizard navigation
 function showSection(id) {
@@ -252,29 +250,29 @@ function showSection(id) {
 // initialize fields
 createEssentialsFields();
 createWantsFields();
-showDebtsStep();
+// showDebtsStep();
 
 // Real-time budget feedback
 function updateRealtimeFeedback() {
     const income = parseFloat($('income').value) || 0;
 
     // Debts - determine monthly debt total if entries exist
-    const debtsListDiv = $('debtsList');
-    const countVal = debtsListDiv.querySelector('#debtsCount') ? (parseInt(debtsListDiv.querySelector('#debtsCount').value) || 0) : 0;
-    let monthlyDebtTotal = 0;
-    if (countVal > 0) {
-        const allDivs = debtsListDiv.querySelectorAll('div');
-        const entriesDiv = allDivs[allDivs.length - 1];
-        if (entriesDiv) {
-            const boxes = entriesDiv.children;
-            for (const b of boxes) {
-                const ins = b.querySelectorAll('input');
-                if (ins.length >= 2) {
-                    monthlyDebtTotal += parseFloat(ins[1].value) || 0;
-                }
-            }
-        }
-    }
+    // const debtsListDiv = $('debtsList');
+    // const countVal = debtsListDiv.querySelector('#debtsCount') ? (parseInt(debtsListDiv.querySelector('#debtsCount').value) || 0) : 0;
+    // let monthlyDebtTotal = 0;
+    // if (countVal > 0) {
+    //     const allDivs = debtsListDiv.querySelectorAll('div');
+    //     const entriesDiv = allDivs[allDivs.length - 1];
+    //     if (entriesDiv) {
+    //         const boxes = entriesDiv.children;
+    //         for (const b of boxes) {
+    //             const ins = b.querySelectorAll('input');
+    //             if (ins.length >= 2) {
+    //                 monthlyDebtTotal += parseFloat(ins[1].value) || 0;
+    //             }
+    //         }
+    //     }
+    // }
 
     // Essentials total
     let essentialsTotal = 0;
@@ -283,7 +281,7 @@ function updateRealtimeFeedback() {
     essentialAmounts.forEach(input => { essentialsTotal += parseFloat(input.value) || 0; });
 
     // Calculate leftover AFTER fixed expenses (debt + essentials) - this is shown BEFORE wants
-    const leftover_after_fixed_live = Math.max(0, income - (monthlyDebtTotal + essentialsTotal));
+    const leftover_after_fixed_live = Math.max(0, income - essentialsTotal);
 
     // Determine active goal and reservation percentage
     const activeGoal = parseInt(document.querySelector('.goal-btn.active')?.dataset.goal) || 1;
@@ -334,7 +332,7 @@ function updateRealtimeFeedback() {
 
     // Overall realtime money left (income - all current entries)
     let wantsTotal = totalWantsEntered;
-    const totalSpent = monthlyDebtTotal + essentialsTotal + wantsTotal;
+    const totalSpent = essentialsTotal + wantsTotal;
     const moneyLeft = income - totalSpent;
 
     const feedbackEl = $('realtimeFeedback');
@@ -372,9 +370,112 @@ formEl.addEventListener('input', (e) => {
 
 // initialize fields
 
-function renderChart() {
-    // Chart rendering logic here
+async function displayChart() {
+    isChartLoaded = null
+    await loadStateExtensionData("spendless_data").then((result) => {
+        if (!result.spendless_data) isChartLoaded = false;
+        else isChartLoaded = true;
+    });
+
+    if (!isChartLoaded) {
+        return;
+    }
+
+    debts = null;
+    essentials = null;
+    wants = null;
+    savings = null;
+    money_leftover = null;
+    income = null;
+
+    await loadStateExtensionData("spendless_data").then((result) => {
+        debts = result.spendless_data.debts;
+        essentials = result.spendless_data.essentials_allocations;
+        wants = result.spendless_data.wants_allocations;
+        savings = result.spendless_data.savings;
+        money_leftover = result.spendless_data.money_leftover;
+        income = result.spendless_data.income;
+    });
+
+    while (debts === null || essentials === null || wants === null || savings === null || money_leftover === null || income === null);
+
+    console.log(`${essentials}`)
+
+    debtTotal = debts.reduce((s,d)=>s+(d||0),0);
+    essentialsTotal = essentials.reduce((s,d)=>s+(d||0),0);
+    wantsTotal = Object.values(wants).reduce((s,d)=>s+(d||0),0);
+    
+    let chartStatus = 'Healthy Budget ✓';
+    const percentLeft = income > 0 ? (money_leftover / income) * 100 : 0;
+
+    if (income - (essentialsTotal + wantsTotal + debtTotal) < 0) {
+        chartStatus = 'Warning: Overspending ⚠️';
+    } else if (percentLeft < 10 && percentLeft >= 0) {
+        chartStatus = 'Tight Budget ⚠️';
+    } else if (savings > 0) {
+        chartStatus = 'Healthy Budget with Savings ✓';
+    }
+
+    const chartCanvas = document.getElementById('expensesChart');
+    chartCanvas.style.display = 'block';
+    chartCanvas.style.maxWidth = '512px';
+    chartCanvas.style.maxHeight = '512px';
+    chartCanvas.width = 512;
+    chartCanvas.height = 512;
+    const ctx = chartCanvas.getContext('2d');
+    if (window.finalChart) window.finalChart.destroy();
+
+    // Create chart with meaningful slices
+    const chartLabels = [];
+    const chartData = [];
+    const chartColors = [];
+
+    console.log(`${debtTotal}, ${essentialsTotal}, ${wantsTotal}, ${savings}, ${money_leftover}, ${income}`);
+
+    if (debtTotal > 0) {
+        chartLabels.push(`Debt ($${debtTotal.toFixed(2)})`);
+        chartData.push(debtTotal);
+        chartColors.push('#ef4444');
+    }
+    if (essentialsTotal > 0) {
+        chartLabels.push(`Essentials ($${essentialsTotal.toFixed(2)})`);
+        chartData.push(essentialsTotal);
+        chartColors.push('#10b981');
+    }
+    if (wantsTotal > 0) {
+        chartLabels.push(`Wants ($${wantsTotal.toFixed(2)})`);
+        chartData.push(wantsTotal);
+        chartColors.push('#f97316');
+    }
+    if (savings > 0) {
+        chartLabels.push(`Savings ($${savings.toFixed(2)})`);
+        chartData.push(savings);
+        chartColors.push('#3b82f6');
+    }
+    if (money_leftover > 0 && savings === 0) {
+        chartLabels.push(`Leftover ($${money_leftover.toFixed(2)})`);
+        chartData.push(money_leftover);
+        chartColors.push('#60a5fa');
+    }
+
+    window.finalChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: chartLabels,
+            datasets: [{ data: chartData, backgroundColor: chartColors, borderColor: '#fff', borderWidth: 2 }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                title: { display: true, text: `${chartStatus} (Budget: $${income})` }
+            }
+        }
+    });
 }
+
+displayChart();
 
 // main calculation flow executed when user clicks Calculate & Show Chart
 $('calculate').addEventListener('click', () => {
@@ -385,7 +486,7 @@ $('calculate').addEventListener('click', () => {
     // 2. Debts: read debtsList entries if user created them (count > 0)
     state.debts = [];
     const debtsListDiv = $('debtsList');
-    const countInput = debtsListDiv.querySelector('#debtsCount');
+    const countInput = 0;
     const countVal = countInput ? (parseInt(countInput.value) || 0) : 0;
     if (countVal > 0) {
         const allDivs = debtsListDiv.querySelectorAll('div');
@@ -709,7 +810,6 @@ $('calculate').addEventListener('click', () => {
     const debtTotal = monthly_debt_total;
 
     // Determine chart status and title
-    let chartTitle = 'Budget Breakdown';
     let chartStatus = 'Healthy Budget ✓';
     const percentLeft = income > 0 ? (state.money_leftover / income) * 100 : 0;
 

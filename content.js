@@ -23,6 +23,7 @@ function disableScroll() {
     document.body.classList.add('no-scroll');
 }
 
+
 function enableScroll() {
     // Remove CSS class
     document.body.classList.remove('no-scroll');
@@ -205,7 +206,6 @@ async function init() {
         
         console.log("Price Detected:", totalAmount);
 
-        
         const overlayTitle = document.getElementById('overlayTitle');
         overlayTitle.appendChild(document.createTextNode(`You are spending $${totalAmount.toFixed(2)}.`)); 
 
@@ -237,7 +237,6 @@ async function init() {
 
         riskText.appendChild(document.createTextNode(`Risk Level: ${threshold.level}`));
         riskText.style.color = threshold.color;
-
 
     } else {
         showBudgetContent();
