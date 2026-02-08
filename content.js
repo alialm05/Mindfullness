@@ -4,34 +4,39 @@ const overlayHolder = document.createElement('div');
 overlayHolder.style.all = "initial";
 document.body.appendChild(overlayHolder);
 
-const overlay = document.createElement('div');
-overlay.className = "budgetOverlay";
 
-overlay.innerHTML = `
-    <h1 style="margin-top:0">Monthly Budget Impact</h2>
-    <p>This purchase represents a new slice in your monthly spending.</p>
-    <h1 id="overlayTitle"></h1>
-    <h2 id="budgetStatus"></h2>
-    <canvas id="budgetChart" width="250" height="250" style="max-width:250px;max-height:250px;"></canvas>
-    <button id="closeOverlay" data-risk="" style="display:none">I understand, let me shop</button>
-`;
 
-overlayHolder.appendChild(overlay);
+function createOverlay() {
+    const overlay = document.createElement('div');
+    overlay.className = "budgetOverlay";
 
-// 3. Add close button logic first (before chart initialization)
-document.getElementById('closeOverlay').addEventListener('click', (e) => {
-    console.log('Overlay closed by user');
-    overlay.remove();
+    overlay.innerHTML = `
+        <h1 style="margin-top:0">Monthly Budget Impact</h1>
+        <p>This purchase represents a new slice in your monthly spending.</p>
+        <h1 id="overlayTitle"></h1>
+        <h2 id="budgetStatus"></h2>
+        <canvas id="budgetChart" width="250" height="250" style="max-width:250px;max-height:250px;"></canvas>
+        <button id="closeOverlay" data-risk="" style="display:none">I understand, let me shop</button>
+    `;
 
-    const riskLevel = e.currentTarget.dataset.risk;
+    overlayHolder.appendChild(overlay);
 
-    if (riskLevel < 25) return; // No sound for Low/Medium risk
+    document.getElementById('closeOverlay').addEventListener('click', (e) => {
+        console.log('Overlay closed by user');
+        overlay.remove();
 
-    const audioUrl = chrome.runtime.getURL("resources/siren.mp3");
-    const audio = new Audio(audioUrl);
-    audio.volume = 0.75;
-    audio.play();
-});
+        const riskLevel = e.currentTarget.dataset.risk;
+
+        if (riskLevel < 25) return; // No sound for Low/Medium risk
+
+        const audioUrl = chrome.runtime.getURL("resources/siren.mp3");
+        const audio = new Audio(audioUrl);
+        audio.volume = 0.75;
+        audio.play();
+    });
+
+    return overlay;
+}
 
 function createChart(purchase, moneyLeft){
     const ctx = document.getElementById('budgetChart').getContext('2d');
@@ -55,11 +60,23 @@ function createChart(purchase, moneyLeft){
 // Initialize Popup on checkout
 function init() {
 
+    if (isAmazonUpsell()) {
+        return; 
+    }
+
+    const overlay = createOverlay();
     console.log('Initializing content script...');
 
     const totalAmount = findOrderTotal();
     console.log('Total amount found:', totalAmount);
     if (totalAmount) {
+        
+        /*const loadingEl = document.getElementById('overlayLoading');
+        const contentEl = document.getElementById('overlayContent');
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (contentEl) contentEl.style.display = 'flex';
+        */
+
         console.log("Price Detected:", totalAmount);
 
         //showBudgetImpact(totalAmount);

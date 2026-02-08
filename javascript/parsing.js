@@ -1,3 +1,26 @@
+function isAmazonUpsell() {
+    const isAmazon = window.location.hostname.includes('amazon');
+    
+    if (isAmazon) {
+        const bodyText = document.body.innerText.toLowerCase();
+        const upsellKeywords = [
+            "join prime",
+            "free shipping with prime",
+            "start your 30-day free trial",
+            "select a prime plan"
+        ];
+
+        // Check if any keyword exists on the page
+        const foundUpsell = upsellKeywords.some(keyword => bodyText.includes(keyword));
+        
+        if (foundUpsell) {
+            console.log("Mindfulness: Amazon Upsell detected. Standing down.");
+            return true;
+        }
+    }
+    return false;
+}
+
 function getPriceAmazon(){
     const grandTotal = document.querySelector('.grand-total-cell');
 
@@ -123,4 +146,5 @@ if (typeof window !== 'undefined') {
     window.getPriceAmazon = getPriceAmazon;
     window.findPriceBySymbol = findPriceBySymbol;
     window.findLargestPrice = findLargestPrice;
+    window.isAmazonUpsell = isAmazonUpsell;
 }
