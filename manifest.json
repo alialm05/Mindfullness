@@ -16,36 +16,49 @@
     "contextMenus",
     "tabs"
   ],
-   "content_scripts": [
+  "content_scripts": [
     {
-        "matches": [
-          "https://www.amazon.ca/checkout*", 
-          "https://www.amazon.com/checkout*",
-          "*://*/checkout*", 
-          "*://*/cart*",
-          "https://pay.ebay.ca/*"
-          ],
-        "js": ["javascript/utils.js", "javascript/parsing.js", "javascript/chart.umd.min.js", "content.js"],
-        "css": ["css/style.css"]
+      "matches": [
+        "https://www.amazon.ca/checkout*",
+        "https://www.amazon.com/checkout*",
+        "*://*/checkout*",
+        "*://*/cart*",
+        "https://pay.ebay.ca/*"
+      ],
+      "js": [
+        "javascript/utils.js",
+        "javascript/parsing.js",
+        "javascript/chart.umd.min.js",
+        "content.js"
+      ],
+      "css": [
+        "css/style.css"
+      ]
     }
-    ],
-
-    "web_accessible_resources": [
+  ],
+  "web_accessible_resources": [
     {
-        "resources": ["javascript/utils.js", 
-        "javascript/parsing.js", "javascript/chart.umd.min.js", "content.js", 
-        "resources/siren.mp3", "resources/*"],
-        "matches": ["<all_urls>"]
+      "resources": [
+        "javascript/utils.js",
+        "javascript/parsing.js",
+        "javascript/chart.umd.min.js",
+        "content.js",
+        "resources/siren.mp3",
+        "resources/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
-    ],
+  ],
   "action": {
     "default_icon": "resources/icon.png"
   },
-    "options_ui": {
+  "options_ui": {
     "page": "home.html",
     "open_in_tab": true
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
-}
+  }
 }

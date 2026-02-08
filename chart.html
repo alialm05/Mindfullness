@@ -1,109 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Expenses Chart</title>
-    <script src="javascript/chart.umd.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/form.css">
+  <title>Expenses Chart</title>
+  <script src="javascript/chart.umd.min.js"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:wght@400;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/form.css">
 </head>
+
 <body>
-    <div class="container">
-        <div class="app-header">
-            <h1>$PENDLESS</h1>
-            <div class="subtitle">Plan smarter. Save more. Spend with purpose.</div>
-        </div>
-        <hr class="header-divider" />
-
-        <form id="planningForm" style="display:flex;flex-direction:column;gap:12px;margin-top:6px;">
-            <section id="incomeSection">
-                <h3>Monthly Income</h3>
-                <div class="income-row">
-                    <label for="income">Enter your monthly take-home pay</label>
-                    <div class="income-input">
-                            <span class="income-dollar">$</span>
-                            <input id="income" type="number" min="0" step="0.01" placeholder="0.00" />
-                        </div>
-                </div>
-            </section>
-
-            <div id="realtimeFeedback">
-                <span id="feedbackText">💰 Money Remaining: $0.00</span>
-            </div>
-
-            <section id="debtsSection">
-                <h3 style="margin:6px 0">Debts</h3>
-                <div id="debtsList" style="display:flex;flex-direction:column;gap:8px"></div>
-                <div style="display:flex;gap:8px;">
-                    <button id="addDebt" type="button" class="primary">Add Debt</button>
-                    <small class="small" style="align-self:center">Add each monthly debt payment</small>
-                </div>
-            </section>
-
-            <section>
-                <h3 style="margin:6px 0">Essentials</h3>
-                <div id="essentials" class="essentials-list">
-                    <!-- essentials will be populated by JS -->
-                </div>
-            </section>
-
-            <section>
-                <h3 style="margin:6px 0">Select Your Goal</h3>
-                <div class="goal-buttons">
-                    <button type="button" class="goal-btn active" data-goal="1"><span class="icon">🐖</span> <span>Save money</span></button>
-                    <button type="button" class="goal-btn" data-goal="2"><span class="icon">🪙</span> <span>Spend on wants</span></button>
-                    <button type="button" class="goal-btn" data-goal="3"><span class="icon">💰</span> <span>Save & spend</span></button>
-                </div>
-
-                <div id="extraDebtAllocations" style="margin-top:8px;display:none">
-                    <h4 style="margin:6px 0">Extra Debt Allocations (for Goal 4)</h4>
-                    <div id="extraAllocInputs" style="display:flex;flex-direction:column;gap:6px"></div>
-                </div>
-            </section>
-
-            <section>
-                <h3 style="margin:6px 0">Wants (optional)</h3>
-                <div id="wants" style="display:flex;flex-direction:column;gap:0;border-radius:8px;overflow:hidden;background:white">
-                    <div id="wantsBudgetHeader" style="display:none">
-                        <div>
-                            <span class="label">Selected Goal:</span>
-                            <span id="wantsBudgetGoalName">—</span>
-                        </div>
-                        <div>
-                            <span class="label">Max Budget for Wants:</span>
-                            <span class="amount" id="wantsBudgetMax">$0.00</span>
-                        </div>
-                        <div>
-                            <span class="label">Remaining to Spend:</span>
-                            <span class="amount" id="wantsBudgetRemaining">$0.00</span>
-                        </div>
-                        <div id="wantsBudgetNote">&nbsp;</div>
-                    </div>
-                    <!-- wants fields populated by JS -->
-                </div>
-                <div id="wantsBudgetWarning">⚠️ <strong>Budget Exceeded!</strong> You've spent more than your available wants budget.</div>
-            </section>
-
-            <div class="controls">
-                <button id="calculate" type="button" class="positive">Calculate & Show Chart</button>
-                <button id="reset" type="button" class="secondary">Reset</button>
-            </div>
-        </form>
-
-        <div id="summaryChartRow" style="margin-top:16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
-            <div id="result" style="flex:1 1 360px;display:none">
-                <h3>Summary</h3>
-                <pre id="summary" style="background:#f7f7f7;padding:12px;border-radius:6px;white-space:pre-wrap;"></pre>
-            </div>
-
-            <div style="flex:0 0 auto;">
-                <canvas id="expensesChart" style="display:none"></canvas>
-            </div>
-        </div>
+  <div class="container">
+    <div class="app-header">
+      <h1>$PENDLESS</h1>
+      <div class="subtitle">Plan smarter. Save more. Spend with purpose.</div>
     </div>
+    <hr class="header-divider" />
 
-    <script src="javascript/chart-page.js"></script>
+    <form id="planningForm" style="display:flex;flex-direction:column;gap:12px;margin-top:6px;">
+      <section id="incomeSection">
+        <h3>Monthly Income</h3>
+        <div class="income-row">
+          <label for="income">Enter your monthly take-home pay</label>
+          <div class="income-input">
+            <span class="income-dollar">$</span>
+            <input id="income" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+        </div>
+      </section>
+
+      <div id="realtimeFeedback">
+        <span id="feedbackText">💰 Money Remaining: $0.00</span>
+      </div>
+
+      <!-- <section id="debtsSection"> -->
+      <!-- <h3 style="margin:6px 0">Debts</h3> -->
+      <!-- <div id="debtsList" style="display:flex;flex-direction:column;gap:8px"></div> -->
+      <!-- <div style="display:flex;gap:8px;"> -->
+      <!-- <button id="addDebt" type="button" class="primary">Add Debt</button> -->
+      <!-- <small class="small" style="align-self:center">Add each monthly debt payment</small> -->
+      <!-- </div> -->
+      <!-- </section> -->
+
+      <section>
+        <h3 style="margin:6px 0">Essentials</h3>
+        <div id="essentials" class="essentials-list">
+          <!-- essentials will be populated by JS -->
+        </div>
+      </section>
+
+      <section>
+        <h3 style="margin:6px 0">Select Your Goal</h3>
+        <div class="goal-buttons">
+          <button type="button" class="goal-btn active" data-goal="1"><span class="icon">🐖</span> <span>Save
+              money</span></button>
+          <button type="button" class="goal-btn" data-goal="2"><span class="icon">🪙</span> <span>Spend on
+              wants</span></button>
+          <button type="button" class="goal-btn" data-goal="3"><span class="icon">💰</span> <span>Save &
+              spend</span></button>
+        </div>
+
+        <div id="extraDebtAllocations" style="margin-top:8px;display:none">
+          <h4 style="margin:6px 0">Extra Debt Allocations (for Goal 4)</h4>
+          <div id="extraAllocInputs" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+      </section>
+
+      <section>
+        <h3 style="margin:6px 0">Wants (optional)</h3>
+        <div id="wants"
+          style="display:flex;flex-direction:column;gap:0;border-radius:8px;overflow:hidden;background:white">
+          <div id="wantsBudgetHeader" style="display:none">
+            <div>
+              <span class="label">Selected Goal:</span>
+              <span id="wantsBudgetGoalName">—</span>
+            </div>
+            <div>
+              <span class="label">Max Budget for Wants:</span>
+              <span class="amount" id="wantsBudgetMax">$0.00</span>
+            </div>
+            <div>
+              <span class="label">Remaining to Spend:</span>
+              <span class="amount" id="wantsBudgetRemaining">$0.00</span>
+            </div>
+            <div id="wantsBudgetNote">&nbsp;</div>
+          </div>
+          <!-- wants fields populated by JS -->
+        </div>
+        <div id="wantsBudgetWarning">⚠️ <strong>Budget Exceeded!</strong> You've spent more than your available wants
+          budget.</div>
+      </section>
+
+      <div class="controls">
+        <button id="calculate" type="button" class="positive">Calculate & Show Chart</button>
+        <button id="reset" type="button" class="secondary">Reset</button>
+      </div>
+    </form>
+
+    <div id="summaryChartRow" style="margin-top:16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="result" style="flex:1 1 360px;display:none">
+        <h3>Summary</h3>
+        <pre id="summary" style="background:#f7f7f7;padding:12px;border-radius:6px;white-space:pre-wrap;"></pre>
+      </div>
+
+      <div style="flex:0 0 auto;">
+        <canvas id="expensesChart" style="display:none"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script src="javascript/chart-page.js"></script>
 </body>
+
 </html>

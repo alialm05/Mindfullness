@@ -15,17 +15,15 @@ let state = {
 };
 
 function saveStateExtensionData(value) {
-    chrome.storage.local.set({ data : value }).then()
+    chrome.storage.local.set({ spendless_data : value }).then()
 }
 
-function loadStateExtensionData(key) {
-    chrome.storage.local.get([key]).then((result) => {
-       return result; 
-    });
+async function loadStateExtensionData(key) {
+    return chrome.storage.local.get([key]);
 }
 
 function resetStateExtensionData() {
-    saveStateExtensionData(0);
+    saveStateExtensionData(null);
 }
 
 const goal_allocations = {1: 0.8, 2: 0.3, 3: 0.5, 4: 0.7};
@@ -372,6 +370,113 @@ formEl.addEventListener('input', (e) => {
 
 // initialize fields
 
+async function displayChart() {
+    isChartLoaded = null
+    await loadStateExtensionData("spendless_data").then((result) => {
+        if (!result.spendless_data) isChartLoaded = false;
+        else isChartLoaded = true;
+    });
+
+    if (!isChartLoaded) {
+        return;
+    }
+
+    debts = null;
+    essentials = null;
+    wants = null;
+    savings = null;
+    money_leftover = null;
+    income = null;
+
+    await loadStateExtensionData("spendless_data").then((result) => {
+        debts = result.spendless_data.debts;
+        essentials = result.spendless_data.essentials_allocations;
+        wants = result.spendless_data.wants_allocations;
+        savings = result.spendless_data.savings;
+        money_leftover = result.spendless_data.money_leftover;
+        income = result.spendless_data.income;
+    });
+
+    while (debts === null || essentials === null || wants === null || savings === null || money_leftover === null || income === null);
+
+    console.log(`${essentials}`)
+
+    debtTotal = debts.reduce((s,d)=>s+(d||0),0);
+    essentialsTotal = essentials.reduce((s,d)=>s+(d||0),0);
+    wantsTotal = Object.values(wants).reduce((s,d)=>s+(d||0),0);
+    
+    let chartStatus = 'Healthy Budget ✓';
+    const percentLeft = income > 0 ? (money_leftover / income) * 100 : 0;
+
+    if (income - (essentialsTotal + wantsTotal + debtTotal) < 0) {
+        chartStatus = 'Warning: Overspending ⚠️';
+    } else if (percentLeft < 10 && percentLeft >= 0) {
+        chartStatus = 'Tight Budget ⚠️';
+    } else if (savings > 0) {
+        chartStatus = 'Healthy Budget with Savings ✓';
+    }
+
+    const chartCanvas = document.getElementById('expensesChart');
+    chartCanvas.style.display = 'block';
+    chartCanvas.style.maxWidth = '512px';
+    chartCanvas.style.maxHeight = '512px';
+    chartCanvas.width = 512;
+    chartCanvas.height = 512;
+    const ctx = chartCanvas.getContext('2d');
+    if (window.finalChart) window.finalChart.destroy();
+
+    // Create chart with meaningful slices
+    const chartLabels = [];
+    const chartData = [];
+    const chartColors = [];
+
+    console.log(`${debtTotal}, ${essentialsTotal}, ${wantsTotal}, ${savings}, ${money_leftover}, ${income}`);
+
+    if (debtTotal > 0) {
+        chartLabels.push(`Debt ($${debtTotal.toFixed(2)})`);
+        chartData.push(debtTotal);
+        chartColors.push('#ef4444');
+    }
+    if (essentialsTotal > 0) {
+        chartLabels.push(`Essentials ($${essentialsTotal.toFixed(2)})`);
+        chartData.push(essentialsTotal);
+        chartColors.push('#10b981');
+    }
+    if (wantsTotal > 0) {
+        chartLabels.push(`Wants ($${wantsTotal.toFixed(2)})`);
+        chartData.push(wantsTotal);
+        chartColors.push('#f97316');
+    }
+    if (savings > 0) {
+        chartLabels.push(`Savings ($${savings.toFixed(2)})`);
+        chartData.push(savings);
+        chartColors.push('#3b82f6');
+    }
+    if (money_leftover > 0 && savings === 0) {
+        chartLabels.push(`Leftover ($${money_leftover.toFixed(2)})`);
+        chartData.push(money_leftover);
+        chartColors.push('#60a5fa');
+    }
+
+    window.finalChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: chartLabels,
+            datasets: [{ data: chartData, backgroundColor: chartColors, borderColor: '#fff', borderWidth: 2 }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                title: { display: true, text: `${chartStatus} (Budget: $${income})` }
+            }
+        }
+    });
+}
+
+displayChart();
+
 // main calculation flow executed when user clicks Calculate & Show Chart
 $('calculate').addEventListener('click', () => {
     // 1. Income
@@ -705,7 +810,6 @@ $('calculate').addEventListener('click', () => {
     const debtTotal = monthly_debt_total;
 
     // Determine chart status and title
-    let chartTitle = 'Budget Breakdown';
     let chartStatus = 'Healthy Budget ✓';
     const percentLeft = income > 0 ? (state.money_leftover / income) * 100 : 0;
 
@@ -773,7 +877,7 @@ $('calculate').addEventListener('click', () => {
         }
     });
 
-    saveStateExtensionData(money_leftover);
+    saveStateExtensionData(state);
 });
 
 // Handle goal button clicks
