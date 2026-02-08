@@ -3,21 +3,39 @@
   "description": "Track your mindfulness journey",
   "version": "1.01",
   "manifest_version": 3,
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "tabs"
+  ],
    "content_scripts": [
     {
-        "matches": ["https://www.amazon.com/checkout*", "https://www.ebay.com/*"],
-        "js": ["chart.js", "Dashboard.js"]
+        "matches": [
+          "https://www.amazon.ca/checkout*", 
+          "https://www.amazon.com/checkout*",
+          "*://*/checkout*", 
+          "*://*/cart*",
+          "https://pay.ebay.ca/*"
+          ],
+        "js": ["javascript/utils.js", "javascript/parsing.js", "chart.js", "content.js"],
+        "css": ["css/style.css"]
     }
     ],
 
     "web_accessible_resources": [
     {
-        "resources": ["https://cdn.jsdelivr.net/npm/chart.js", "chart.js", "Dashboard.js"],
-        "matches": ["https://www.amazon.com/*", "https://www.ebay.com/*"]
+        "resources": ["javascript/utils.js", "javascript/parsing.js", "chart.js", "content.js", "resources/siren.mp3"],
+        "matches": ["<all_urls>"]
     }
-],
+    ],
   "action": {
-    "default_popup": "popper.html",
-    "default_icon": "icon.png"
-  }
+    "default_icon": "resources/icon.png"
+  },
+    "options_ui": {
+    "page": "home.html",
+    "open_in_tab": true
+  }   
 }
