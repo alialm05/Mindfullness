@@ -109,6 +109,95 @@
         #result pre{background:linear-gradient(180deg, #f0fdf4, #dbeafe);padding:14px;border-radius:8px;border-left:4px solid var(--accent);overflow:auto;box-shadow:0 4px 12px rgba(5,150,105,0.08)}
         #expensesChart{max-width:100%;height:320px;border-radius:12px;background:linear-gradient(180deg, #ffffff, #f0fdf4);box-shadow:0 8px 24px rgba(5,150,105,0.15);padding:8px;border:1px solid rgba(5,150,105,0.1)}
         .debt-row input{width:140px}
+        #wants {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        #wantsBudgetHeader {
+            background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 8px 8px 0 0;
+            margin: -12px -12px 0 -12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        #wantsBudgetHeader div {
+            margin: 6px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #wantsBudgetHeader .label {
+            opacity: 0.95;
+        }
+        #wantsBudgetHeader .amount {
+            font-size: 18px;
+            font-weight: 700;
+            background: rgba(255,255,255,0.15);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+        }
+        .wants-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 12px;
+            border-bottom: 1px solid rgba(5,150,105,0.1);
+            transition: background 0.2s;
+        }
+        .wants-row:hover {
+            background: rgba(16, 185, 129, 0.05);
+        }
+        .wants-row:last-child {
+            border-bottom: none;
+            border-radius: 0 0 8px 8px;
+        }
+        .wants-row-label {
+            font-weight: 500;
+            color: #1f2937;
+            font-size: 14px;
+        }
+        .wants-row-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .wants-row-input-wrapper span {
+            font-weight: 600;
+            color: var(--accent);
+            font-size: 14px;
+        }
+        .wants-row-input-wrapper input {
+            width: 120px !important;
+            padding: 8px 10px !important;
+            border-radius: 6px !important;
+            border: 2px solid rgba(5,150,105,0.2) !important;
+            background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(240,253,250,0.95)) !important;
+            font-size: 14px !important;
+            transition: all 0.2s !important;
+        }
+        .wants-row-input-wrapper input:focus {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 0 3px rgba(5,150,105,0.1) !important;
+            background: #ffffff !important;
+        }
+        #wantsBudgetWarning {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            color: #991b1b;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border-left: 4px solid #ef4444;
+            margin: 12px 0 0 0;
+            font-weight: 600;
+            font-size: 13px;
+            display: none;
+        }
+        #wantsBudgetWarning strong {
+            color: #7f1d1d;
+        }
         @media(min-width:900px){
             #planningForm{grid-template-columns:1fr 420px}
             #planningForm > section{grid-column:1/span 1}
@@ -170,9 +259,24 @@
 
             <section>
                 <h3 style="margin:6px 0">Wants (optional)</h3>
-                <div id="wants" style="display:grid;grid-template-columns:1fr 120px;gap:8px;align-items:center">
+                <div id="wants" style="display:flex;flex-direction:column;gap:0;border-radius:8px;overflow:hidden;background:white">
+                    <div id="wantsBudgetHeader" style="display:none">
+                        <div>
+                            <span class="label">Selected Goal:</span>
+                            <span id="wantsBudgetGoalName">—</span>
+                        </div>
+                        <div>
+                            <span class="label">Max Budget for Wants:</span>
+                            <span class="amount" id="wantsBudgetMax">$0.00</span>
+                        </div>
+                        <div>
+                            <span class="label">Remaining to Spend:</span>
+                            <span class="amount" id="wantsBudgetRemaining">$0.00</span>
+                        </div>
+                    </div>
                     <!-- wants fields populated by JS -->
                 </div>
+                <div id="wantsBudgetWarning">⚠️ <strong>Budget Exceeded!</strong> You've spent more than your available wants budget.</div>
             </section>
 
             <div class="controls">
@@ -249,32 +353,88 @@
 
         function createWantsFields() {
             const container = $('wants');
+            // Clear only the wants rows, keep the header
+            const header = container.querySelector('#wantsBudgetHeader');
             container.innerHTML = '';
+            if (header) container.appendChild(header);
+            
             wantsCategories.forEach((cat, idx) => {
-                const label = document.createElement('label');
-                label.textContent = `Do you want to spend money on ${cat}? (enter amount if yes)`;
-                label.style.fontSize = '14px';
-
+                const row = document.createElement('div');
+                row.className = 'wants-row';
+                
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'wants-row-label';
+                labelDiv.textContent = cat;
+                
                 const inputWrapper = document.createElement('div');
-                inputWrapper.style.display = 'flex';
-                inputWrapper.style.alignItems = 'center';
-                inputWrapper.style.gap = '4px';
-
+                inputWrapper.className = 'wants-row-input-wrapper';
+                
                 const dollarSign = document.createElement('span');
                 dollarSign.textContent = '$';
-                dollarSign.style.fontWeight = '600';
-                dollarSign.style.color = 'var(--accent)';
-
+                
                 const amt = document.createElement('input');
-                amt.type = 'number'; amt.min = 0; amt.step = '0.01'; amt.placeholder = 'amount'; amt.style.width = '100px';
+                amt.type = 'number';
+                amt.min = 0;
+                amt.step = '0.01';
+                amt.placeholder = '0.00';
                 amt.dataset.idx = idx;
-
+                amt.dataset.category = cat;
+                
+                // Real-time input validation and budget tracking
+                amt.addEventListener('input', updateWantsBudgetTracking);
+                
                 inputWrapper.appendChild(dollarSign);
                 inputWrapper.appendChild(amt);
-
-                container.appendChild(label);
-                container.appendChild(inputWrapper);
+                
+                row.appendChild(labelDiv);
+                row.appendChild(inputWrapper);
+                
+                container.appendChild(row);
             });
+        }
+        
+        function updateWantsBudgetTracking() {
+            const wantsContainer = $('wants');
+            const inputs = wantsContainer.querySelectorAll('input[data-idx]');
+            
+            // Calculate total wants currently entered
+            let totalWantsEntered = 0;
+            inputs.forEach(input => {
+                totalWantsEntered += parseFloat(input.value) || 0;
+            });
+            
+            // Get the maximum wants budget (calculated during Calculate click)
+            const maxWantsBudget = parseFloat(wantsContainer.dataset.maxBudget) || 0;
+            const remaining = Math.max(0, maxWantsBudget - totalWantsEntered);
+            
+            // Update the remaining display
+            const remainingEl = $('wantsBudgetRemaining');
+            if (remainingEl) {
+                remainingEl.textContent = `$${remaining.toFixed(2)}`;
+                remainingEl.style.color = totalWantsEntered > maxWantsBudget ? '#ef4444' : 'white';
+            }
+            
+            // Show/hide warning
+            const warningEl = $('wantsBudgetWarning');
+            if (totalWantsEntered > maxWantsBudget && maxWantsBudget > 0) {
+                warningEl.style.display = 'block';
+            } else {
+                warningEl.style.display = 'none';
+            }
+            
+            // Cap input values at remaining budget (prevent overspending per field)
+            if (totalWantsEntered > maxWantsBudget && maxWantsBudget > 0) {
+                // This input would exceed budget, cap it
+                const currentInput = event.target;
+                const currentValue = parseFloat(currentInput.value) || 0;
+                const othersTotal = totalWantsEntered - currentValue;
+                const allowedForThis = Math.max(0, maxWantsBudget - othersTotal);
+                
+                if (currentValue > allowedForThis) {
+                    currentInput.value = allowedForThis.toFixed(2);
+                    updateWantsBudgetTracking(); // Recursive call to update display
+                }
+            }
         }
 
         // Debts management: user is asked "Do you have any monthly debt payments? (y/n):"
@@ -626,6 +786,40 @@
             state.goal_percentage = goal_percentage;
             state.savings = Math.round(savings*100)/100;
             state.money_leftover = Math.round(money_leftover*100)/100;
+
+            // Update the wants budget header to show user's budget
+            const wantsContainer = $('wants');
+            const wantsBudgetHeader = wantsContainer.querySelector('#wantsBudgetHeader');
+            const wantsBudgetGoalName = $('wantsBudgetGoalName');
+            const wantsBudgetMax = $('wantsBudgetMax');
+            const wantsBudgetRemaining = $('wantsBudgetRemaining');
+            
+            if (state.money_leftover > 0) {
+                // Show the header
+                wantsBudgetHeader.style.display = 'block';
+                
+                // Set goal name
+                let goalNameDisplay = '';
+                switch(state.goal) {
+                    case 1: goalNameDisplay = 'Save money (75% reserved)'; break;
+                    case 2: goalNameDisplay = 'Spend on wants (5% reserved)'; break;
+                    case 3: goalNameDisplay = 'Save and spend (50% reserved)'; break;
+                    case 4: goalNameDisplay = 'Pay off debt (70% reserved)'; break;
+                    default: goalNameDisplay = 'Unknown goal'; break;
+                }
+                wantsBudgetGoalName.textContent = goalNameDisplay;
+                
+                // Set budget amounts
+                wantsBudgetMax.textContent = `$${state.money_leftover.toFixed(2)}`;
+                wantsBudgetRemaining.textContent = `$${state.money_leftover.toFixed(2)}`;
+                
+                // Store max budget on container for real-time tracking
+                wantsContainer.dataset.maxBudget = state.money_leftover.toString();
+            } else {
+                // Hide the header if no budget
+                wantsBudgetHeader.style.display = 'none';
+                wantsContainer.dataset.maxBudget = '0';
+            }
 
             // 6. Wants (only if money_leftover > 0 after goal allocation)
             let wants_allocations = {};
