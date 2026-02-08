@@ -102,6 +102,10 @@
         #debtHealth > div:first-child{border-bottom:1px solid rgba(79,70,229,0.1);padding-bottom:8px;margin-bottom:8px}
         #debtHealth .on-track{background:var(--on-track-light);border-left:4px solid var(--success);padding:10px;border-radius:6px;color:#047857;margin-top:8px;font-weight:500}
         #debtHealth .at-risk{background:var(--at-risk-light);border-left:4px solid var(--warning);padding:10px;border-radius:6px;color:#b45309;margin-top:8px;font-weight:500}
+        #realtimeFeedback{background:linear-gradient(180deg, #f0fdf4, #dbeafe);padding:12px;border-radius:8px;border:1px solid rgba(5,150,105,0.2);margin-top:8px;text-align:center;font-weight:600;font-size:14px;display:none}
+        #realtimeFeedback.safe{background:linear-gradient(180deg, #ecfdf5, #d1fae5);color:#065f46;border-color:rgba(5,150,105,0.3)}
+        #realtimeFeedback.tight{background:linear-gradient(180deg, #fffbeb, #fef3c7);color:#92400e;border-color:rgba(245,158,11,0.3)}
+        #realtimeFeedback.danger{background:linear-gradient(180deg, #fef2f2, #fee2e2);color:#991b1b;border-color:rgba(249,115,22,0.3)}
         #result pre{background:linear-gradient(180deg, #f0fdf4, #dbeafe);padding:14px;border-radius:8px;border-left:4px solid var(--accent);overflow:auto;box-shadow:0 4px 12px rgba(5,150,105,0.08)}
         #expensesChart{max-width:100%;height:320px;border-radius:12px;background:linear-gradient(180deg, #ffffff, #f0fdf4);box-shadow:0 8px 24px rgba(5,150,105,0.15);padding:8px;border:1px solid rgba(5,150,105,0.1)}
         .debt-row input{width:140px}
@@ -121,6 +125,10 @@
                 <label>Monthly Income:
                     <input id="income" type="number" min="0" step="0.01" style="margin-left:6px;width:160px;padding:6px;border-radius:4px;border:1px solid #ccc;" />
                 </label>
+            </div>
+
+            <div id="realtimeFeedback">
+                <span id="feedbackText">💰 Money Remaining: $0.00</span>
             </div>
 
             <section id="debtsSection">
@@ -366,6 +374,85 @@
         createWantsFields();
         showDebtsStep();
 
+        // Real-time budget feedback
+        function updateRealtimeFeedback() {
+            const income = parseFloat($('income').value) || 0;
+            
+            // Debts
+            const debtsListDiv = $('debtsList');
+            const countVal = debtsListDiv.querySelector('#debtsCount') ? (parseInt(debtsListDiv.querySelector('#debtsCount').value) || 0) : 0;
+            let monthlyDebtTotal = 0;
+            if (countVal > 0) {
+                const allDivs = debtsListDiv.querySelectorAll('div');
+                const entriesDiv = allDivs[allDivs.length - 1];
+                if (entriesDiv) {
+                    const boxes = entriesDiv.children;
+                    for (const b of boxes) {
+                        const ins = b.querySelectorAll('input');
+                        if (ins.length >= 2) {
+                            monthlyDebtTotal += parseFloat(ins[1].value) || 0;
+                        }
+                    }
+                }
+            }
+
+            // Essentials
+            let essentialsTotal = 0;
+            const essentialsContainer = $('essentials');
+            const essentialAmounts = essentialsContainer.querySelectorAll('input[data-idx]');
+            essentialAmounts.forEach(input => {
+                essentialsTotal += parseFloat(input.value) || 0;
+            });
+
+            // Wants
+            let wantsTotal = 0;
+            const wantsContainer = $('wants');
+            const wantAmounts = wantsContainer.querySelectorAll('input[data-idx]');
+            wantAmounts.forEach(input => {
+                wantsTotal += parseFloat(input.value) || 0;
+            });
+
+            const totalSpent = monthlyDebtTotal + essentialsTotal + wantsTotal;
+            const moneyLeft = income - totalSpent;
+
+            const feedbackEl = $('realtimeFeedback');
+            const feedbackText = $('feedbackText');
+            
+            if (income > 0) {
+                feedbackEl.style.display = 'block';
+                feedbackText.textContent = `💰 Money Remaining: $${moneyLeft.toFixed(2)}`;
+
+                // Color coding
+                const percentLeft = (moneyLeft / income) * 100;
+                feedbackEl.className = '';
+                if (moneyLeft < 0) {
+                    feedbackEl.classList.add('danger');
+                    feedbackText.textContent = `🔴 Over Budget: -$${Math.abs(moneyLeft).toFixed(2)}`;
+                } else if (percentLeft < 10) {
+                    feedbackEl.classList.add('tight');
+                    feedbackText.textContent = `🟡 Tight Budget: $${moneyLeft.toFixed(2)} remaining`;
+                } else {
+                    feedbackEl.classList.add('safe');
+                    feedbackText.textContent = `🟢 Healthy: $${moneyLeft.toFixed(2)} remaining`;
+                }
+            } else {
+                feedbackEl.style.display = 'none';
+            }
+        }
+
+        // Attach real-time listeners
+        $('income').addEventListener('input', updateRealtimeFeedback);
+        
+        // Update when essentials/wants/debts change
+        const formEl = $('planningForm');
+        formEl.addEventListener('input', (e) => {
+            if (e.target.type === 'number') {
+                updateRealtimeFeedback();
+            }
+        });
+
+        // initialize fields
+
         // main calculation flow executed when user clicks Calculate & Show Chart
         $('calculate').addEventListener('click', () => {
             // 1. Income
@@ -439,67 +526,116 @@
             }
             state.essentials_allocations = essentials_allocations;
 
-            let leftover = income_after_debt - essentials_allocations.reduce((a,b)=>a+b,0);
-            state.leftover_after_essentials = leftover;
+            // Calculate leftover AFTER fixed expenses (debt + essentials)
+            const fixedExpensesTotal = monthly_debt_total + essentials_allocations.reduce((a,b)=>a+b,0);
+            let leftover_after_fixed = income - fixedExpensesTotal;
+            state.leftover_after_essentials = leftover_after_fixed;
 
-            // 4. Goal
-            const goal = parseInt($('goalSelect').value) || 1;
+            // Store these for output clarity
+            state.fixed_expenses_total = Math.round(fixedExpensesTotal*100)/100;
+            state.leftover_after_fixed = Math.round(leftover_after_fixed*100)/100;
+
+            // 4. Goal Selection (only matters if leftover > 0)
+            const goal = leftover_after_fixed > 0 ? (parseInt($('goalSelect').value) || 1) : 0;
             state.goal = goal;
             const on_track = $('onTrack').value || 'n';
             state.on_track = on_track;
 
-            // If goal == 4 and there are debts, perform extra debt allocation
+            // Initialize allocation variables
             let extra_allocations = [];
-            let recommended = 0;
-            let savings = 0;
-            let money_leftover = leftover;
+            let goal_allocation_amount = 0;  // Amount allocated toward goal
+            let goal_percentage = 0;         // Percentage automatically reserved
+            let savings = 0;                   // Amount saved
+            let money_leftover = leftover_after_fixed;  // Money remaining after goal allocation
 
-            if (goal === 4 && state.debts.length > 0) {
-                // read extra allocations inputs if present
-                const extraAllocInputs = $('extraAllocInputs');
-                extra_allocations = [];
-                if (extraAllocInputs) {
-                    const inputs = extraAllocInputs.querySelectorAll('input');
-                    for (let i=0;i<inputs.length;i++) {
-                        extra_allocations.push(parseFloat(inputs[i].value) || 0);
-                    }
-                }
-                recommended = extra_allocations.reduce((a,b)=>a+b,0);
-                money_leftover = leftover - recommended;
-                if (money_leftover < 0) {
-                    // adjust proportionally
-                    const factor = leftover / recommended;
-                    for (let i=0;i<extra_allocations.length;i++) extra_allocations[i] = Math.round(extra_allocations[i]*factor*100)/100;
-                    recommended = extra_allocations.reduce((a,b)=>a+b,0);
-                    money_leftover = 0;
-                }
+            if (leftover_after_fixed <= 0) {
+                // No leftover; nothing to allocate or spend
+                goal_allocation_amount = 0;
+                goal_percentage = 0;
+                savings = 0;
+                money_leftover = 0;
             } else {
-                // allocate based on goal allocations
-                recommended = leftover * (goal_allocations[goal] || 0);
-                if (goal === 4 && on_track.toLowerCase() === 'y' && (leftover - recommended) > 0) {
-                    savings = leftover - recommended;
-                    money_leftover = 0;
+                // Leftover exists; allocate based on goal with fixed percentages
+                if (goal === 1) {
+                    // Goal 1: Save money - automatically save 75%
+                    goal_percentage = 75;
+                    goal_allocation_amount = leftover_after_fixed * 0.75;
+                    savings = goal_allocation_amount;
+                    money_leftover = leftover_after_fixed - savings;
+                } else if (goal === 2) {
+                    // Goal 2: Spend on wants - automatically save 5%
+                    goal_percentage = 5;
+                    goal_allocation_amount = leftover_after_fixed * 0.05;
+                    savings = goal_allocation_amount;
+                    money_leftover = leftover_after_fixed - savings;
+                } else if (goal === 3) {
+                    // Goal 3: Save and spend - automatically save 50%
+                    goal_percentage = 50;
+                    goal_allocation_amount = leftover_after_fixed * 0.50;
+                    savings = goal_allocation_amount;
+                    money_leftover = leftover_after_fixed - savings;
+                } else if (goal === 4 && state.debts.length > 0) {
+                    // Goal 4: Pay off more debt - automatically apply 70%
+                    goal_percentage = 70;
+                    const extraAllocInputs = $('extraAllocInputs');
+                    extra_allocations = [];
+                    if (extraAllocInputs) {
+                        const inputs = extraAllocInputs.querySelectorAll('input');
+                        for (let i=0;i<inputs.length;i++) {
+                            extra_allocations.push(parseFloat(inputs[i].value) || 0);
+                        }
+                    }
+                    // Calculate total from user inputs or auto-allocate 70% proportionally to debts
+                    let totalRequested = extra_allocations.reduce((a,b)=>a+b,0);
+                    if (totalRequested === 0) {
+                        // Auto-allocate 70% proportionally based on debt amounts
+                        const availableForDebt = leftover_after_fixed * 0.70;
+                        const totalDebtAmount = state.debts.reduce((s,d)=>s+(d.total_amount||0),0);
+                        extra_allocations = state.debts.map(d => {
+                            const proportion = totalDebtAmount > 0 ? (d.total_amount || 0) / totalDebtAmount : 0;
+                            return Math.round(availableForDebt * proportion * 100) / 100;
+                        });
+                        goal_allocation_amount = availableForDebt;
+                    } else {
+                        // Use user inputs but cap at 70%
+                        const maxAllowable = leftover_after_fixed * 0.70;
+                        if (totalRequested > maxAllowable) {
+                            // Scale down proportionally
+                            const factor = maxAllowable / totalRequested;
+                            for (let i=0;i<extra_allocations.length;i++) {
+                                extra_allocations[i] = Math.round(extra_allocations[i]*factor*100)/100;
+                            }
+                            goal_allocation_amount = maxAllowable;
+                        } else {
+                            goal_allocation_amount = totalRequested;
+                        }
+                    }
+                    savings = 0;
+                    money_leftover = leftover_after_fixed - goal_allocation_amount;
                 } else {
-                    money_leftover = leftover - recommended;
+                    // Fallback: save 75% if goal selection is invalid
+                    goal_percentage = 75;
+                    goal_allocation_amount = leftover_after_fixed * 0.75;
+                    savings = goal_allocation_amount;
+                    money_leftover = leftover_after_fixed - savings;
                 }
             }
 
             state.extra_allocations = extra_allocations;
-            state.recommended = Math.round(recommended*100)/100;
+            state.goal_allocation_amount = Math.round(goal_allocation_amount*100)/100;
+            state.goal_percentage = goal_percentage;
             state.savings = Math.round(savings*100)/100;
             state.money_leftover = Math.round(money_leftover*100)/100;
 
-            // 6. Wants
+            // 6. Wants (only if money_leftover > 0 after goal allocation)
             let wants_allocations = {};
             if (state.money_leftover > 0) {
                 // read wants fields
                 const wantsContainer = $('wants');
-                const labels = wantsContainer.querySelectorAll('label');
-                const inputs = wantsContainer.querySelectorAll('input');
                 let totalWants = 0;
                 for (let i=0;i<wantsCategories.length;i++) {
-                        const amountInput = wantsContainer.querySelector(`input[data-idx="${i}"]`);
-                        const amount = amountInput ? (parseFloat(amountInput.value) || 0) : 0;
+                    const amountInput = wantsContainer.querySelector(`input[data-idx="${i}"]`);
+                    const amount = amountInput ? (parseFloat(amountInput.value) || 0) : 0;
                     wants_allocations[wantsCategories[i]] = amount;
                     totalWants += amount;
                 }
@@ -515,70 +651,178 @@
                 state.money_leftover = Math.round((state.money_leftover - totalWants)*100)/100;
             }
 
-            // prepare summary text matching the original prints
+            // prepare summary text with clear goal allocation breakdown
             let summary = '';
             summary += `Income: $${income}\n`;
+            summary += `\n──── FIXED EXPENSES ────\n`;
             summary += `Monthly debt payments total: $${monthly_debt_total}\n`;
-            summary += `Income after debt: $${Math.round(income_after_debt*100)/100}\n`;
-            summary += `\nEssentials allocations:\n`;
-            essentialsCategories.forEach((c,i) => { summary += `${c}: $${essentials_allocations[i]}\n`; });
-            summary += `\nMoney left after essentials and debt: $${Math.round(leftover*100)/100}\n`;
-
-            if (state.goal === 4 && state.debts.length > 0) {
-                summary += `\nExtra debt payment allocations:\n`;
-                for (let i=0;i<state.debts.length;i++) {
-                    summary += `${state.debts[i].name}: $${state.extra_allocations[i] || 0}\n`;
+            summary += `Essentials allocations:\n`;
+            essentialsCategories.forEach((c,i) => { 
+                if (essentials_allocations[i] > 0) {
+                    summary += `  ${c}: $${essentials_allocations[i]}\n`; 
                 }
-                summary += `Total extra toward debt: $${state.extra_allocations.reduce((a,b)=>a+b,0)}\n`;
-            } else {
-                summary += `\nMonthly amount toward goal: $${state.recommended}\n`;
-            }
-            if (state.savings > 0) summary += `Automatically saved: $${state.savings}\n`;
-            summary += `Money remaining after goal: $${state.money_leftover}\n`;
+            });
+            summary += `Total fixed expenses: $${state.fixed_expenses_total}\n`;
+            summary += `\n──── LEFTOVER CALCULATION ────\n`;
+            summary += `Income - Fixed Expenses = Leftover for goals/wants\n`;
+            summary += `$${income} - $${state.fixed_expenses_total} = $${state.leftover_after_fixed}\n`;
 
-            if (Object.keys(state.wants_allocations).length > 0) {
-                summary += `\nYour wants allocations:\n`;
-                for (const k in state.wants_allocations) summary += `${k}: $${state.wants_allocations[k]}\n`;
+            if (state.leftover_after_fixed > 0) {
+                summary += `\n──── GOAL ALLOCATION ────\n`;
+                let goalName = '';
+                let goalDescription = '';
+                switch(state.goal) {
+                    case 1: 
+                        goalName = 'Save money'; 
+                        goalDescription = '75% automatically reserved for savings';
+                        break;
+                    case 2: 
+                        goalName = 'Spend on wants'; 
+                        goalDescription = '5% automatically reserved for savings';
+                        break;
+                    case 3: 
+                        goalName = 'Save and spend'; 
+                        goalDescription = '50% automatically reserved for savings';
+                        break;
+                    case 4: 
+                        goalName = 'Pay off more debt'; 
+                        goalDescription = '70% automatically applied to extra debt payments';
+                        break;
+                    default: 
+                        goalName = 'Unknown'; 
+                        goalDescription = '';
+                        break;
+                }
+                summary += `Selected Goal: ${goalName}\n`;
+                summary += `\n📊 AUTOMATIC RESERVATION\n`;
+                summary += `Percentage reserved: ${state.goal_percentage}%\n`;
+                
+                if (state.goal === 4 && state.debts.length > 0) {
+                    summary += `Amount applied to extra debt: $${state.goal_allocation_amount}\n`;
+                    if (state.extra_allocations.length > 0 && state.extra_allocations.some(a => a > 0)) {
+                        summary += `Extra debt payment allocations:\n`;
+                        for (let i=0;i<state.debts.length;i++) {
+                            const alloc = state.extra_allocations[i] || 0;
+                            if (alloc > 0) {
+                                summary += `  ${state.debts[i].name}: $${alloc.toFixed(2)}\n`;
+                            }
+                        }
+                    }
+                } else {
+                    summary += `Amount automatically saved: $${state.goal_allocation_amount}\n`;
+                }
+                
+                summary += `\n💰 SPENDING BALANCE\n`;
+                summary += `Leftover: $${state.leftover_after_fixed}\n`;
+                summary += `After reservation: $${state.money_leftover}\n`;
+                summary += `Remaining available for wants: $${state.money_leftover}\n`;
+
+                if (state.money_leftover > 0) {
+                    summary += `\n──── DISCRETIONARY SPENDING ────\n`;
+                    summary += `Maximum available for wants: $${state.money_leftover}\n`;
+                    if (Object.keys(state.wants_allocations).length > 0) {
+                        let totalWantsUsed = 0;
+                        summary += `Your wants allocations:\n`;
+                        for (const k in state.wants_allocations) {
+                            if (state.wants_allocations[k] > 0) {
+                                summary += `  ${k}: $${state.wants_allocations[k]}\n`;
+                                totalWantsUsed += state.wants_allocations[k];
+                            }
+                        }
+                        summary += `Total wants: $${totalWantsUsed.toFixed(2)}\n`;
+                        summary += `Final leftover: $${state.money_leftover}\n`;
+                    } else {
+                        summary += `(No wants allocated)\n`;
+                    }
+                } else {
+                    summary += `\n⚠️ NO SPENDING BALANCE\n`;
+                    summary += `All remaining funds are reserved for the selected goal. No money available for wants.\n`;
+                }
+            } else {
+                summary += `\n──── NO LEFTOVER ────\n`;
+                summary += `All income is consumed by debt and essentials. No funds available for goals or wants.\n`;
             }
 
             $('summary').textContent = summary;
             $('result').style.display = 'block';
 
-            // show chart: Money Spent, Savings, and Money Leftover (using income as budget)
-            const final_leftover = state.money_leftover;
-            const final_savings = state.savings;
-            const spent = Math.round((income - final_leftover - final_savings)*100)/100;
+            // Calculate totals for breakdown chart
+            const essentialsTotal = essentials_allocations.reduce((a,b)=>a+b,0);
+            const wantsTotal = Object.values(state.wants_allocations).reduce((a,b)=>a+b,0);
+            const debtTotal = monthly_debt_total;
+
+            // Determine chart status and title
+            let chartTitle = 'Budget Breakdown';
+            let chartStatus = 'Healthy Budget ✓';
+            const percentLeft = income > 0 ? (state.money_leftover / income) * 100 : 0;
+            
+            if (income - (essentialsTotal + wantsTotal + debtTotal) < 0) {
+                chartStatus = 'Warning: Overspending ⚠️';
+            } else if (percentLeft < 10 && percentLeft >= 0) {
+                chartStatus = 'Tight Budget ⚠️';
+            } else if (state.savings > 0) {
+                chartStatus = 'Healthy Budget with Savings ✓';
+            }
 
             $('expensesChart').style.display = 'block';
             const ctx = document.getElementById('expensesChart').getContext('2d');
             if (window.finalChart) window.finalChart.destroy();
             
-            // Create chart with three slices
-            const chartLabels = final_savings > 0 
-                ? ['Money Spent', 'Savings', 'Money Leftover']
-                : ['Money Spent', 'Money Leftover'];
-            const chartData = final_savings > 0
-                ? [spent, final_savings, final_leftover]
-                : [spent, final_leftover];
-            const chartColors = final_savings > 0
-                ? ['#f97316', '#10b981', '#60a5fa']
-                : ['#f97316', '#10b981'];
-            
+            // Create chart with meaningful slices
+            const chartLabels = [];
+            const chartData = [];
+            const chartColors = [];
+
+            if (debtTotal > 0) {
+                chartLabels.push(`Debt ($${debtTotal.toFixed(2)})`);
+                chartData.push(debtTotal);
+                chartColors.push('#ef4444');
+            }
+            if (essentialsTotal > 0) {
+                chartLabels.push(`Essentials ($${essentialsTotal.toFixed(2)})`);
+                chartData.push(essentialsTotal);
+                chartColors.push('#10b981');
+            }
+            if (wantsTotal > 0) {
+                chartLabels.push(`Wants ($${wantsTotal.toFixed(2)})`);
+                chartData.push(wantsTotal);
+                chartColors.push('#f97316');
+            }
+            if (state.savings > 0) {
+                chartLabels.push(`Savings ($${state.savings.toFixed(2)})`);
+                chartData.push(state.savings);
+                chartColors.push('#3b82f6');
+            }
+            if (state.money_leftover > 0 && state.savings === 0) {
+                chartLabels.push(`Leftover ($${state.money_leftover.toFixed(2)})`);
+                chartData.push(state.money_leftover);
+                chartColors.push('#60a5fa');
+            }
+
             window.finalChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: chartLabels,
                     datasets: [{ data: chartData, backgroundColor: chartColors, borderColor: '#fff', borderWidth: 2 }]
                 },
-                options: { responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: `Budget Breakdown (Budget: $${income})` } } }
+                options: { 
+                    responsive: true, 
+                    plugins: { 
+                        legend: { position: 'top' }, 
+                        title: { display: true, text: `${chartStatus} (Budget: $${income})` }
+                    } 
+                }
             });
         });
 
-        // show/hide extraAllocInputs when goal select changes
+        // show/hide extraAllocInputs when goal select changes & update wants availability
         $('goalSelect').addEventListener('change', () => {
             const g = parseInt($('goalSelect').value);
             const extraDiv = $('extraDebtAllocations');
             const extraInputs = $('extraAllocInputs');
+            const wantsContainer = $('wants');
+            const wantsInputs = wantsContainer.querySelectorAll('input[data-idx]');
+            
             if (g === 4) {
                 extraDiv.style.display = 'block';
                 // populate inputs for each debt
@@ -591,9 +835,45 @@
                     row.appendChild(label); row.appendChild(inp);
                     extraInputs.appendChild(row);
                 });
+                // Disable wants inputs for goal 4 (debt payoff has priority)
+                wantsInputs.forEach(input => input.disabled = true);
+                wantsInputs.forEach(input => input.style.opacity = '0.5');
             } else {
                 extraDiv.style.display = 'none';
                 extraInputs.innerHTML = '';
+                // Re-enable wants inputs for other goals
+                wantsInputs.forEach(input => input.disabled = false);
+                wantsInputs.forEach(input => input.style.opacity = '1');
+            }
+            
+            // Also add advisory text about wants availability
+            let wantsNote = wantsContainer.querySelector('.wants-availability-note');
+            if (!wantsNote) {
+                wantsNote = document.createElement('div');
+                wantsNote.className = 'wants-availability-note';
+                wantsNote.style.fontSize = '12px';
+                wantsNote.style.color = '#666';
+                wantsNote.style.marginTop = '8px';
+                wantsNote.style.padding = '8px';
+                wantsNote.style.borderLeft = '2px solid #f59e0b';
+                wantsNote.style.backgroundColor = '#fffbeb';
+                wantsContainer.insertBefore(wantsNote, wantsContainer.firstChild);
+            }
+            
+            if (g === 1) {
+                wantsNote.textContent = '💾 Goal: Save money → 75% automatically reserved for savings. Max wants budget: 25% of leftover.';
+                wantsInputs.forEach(input => input.disabled = true);
+                wantsInputs.forEach(input => input.style.opacity = '0.5');
+            } else if (g === 4) {
+                wantsNote.textContent = '💳 Goal: Pay off more debt → 70% automatically applied to extra debt. Max wants budget: 30% of leftover.';
+            } else if (g === 2) {
+                wantsNote.textContent = '🛍️ Goal: Spend on wants → 5% automatically reserved for savings. Max wants budget: 95% of leftover.';
+                wantsInputs.forEach(input => input.disabled = false);
+                wantsInputs.forEach(input => input.style.opacity = '1');
+            } else if (g === 3) {
+                wantsNote.textContent = '🔀 Goal: Save and spend → 50% automatically reserved for savings. Max wants budget: 50% of leftover.';
+                wantsInputs.forEach(input => input.disabled = false);
+                wantsInputs.forEach(input => input.style.opacity = '1');
             }
         });
 
