@@ -6,75 +6,7 @@ overlay.className = "budgetOverlay";
 // Remove require - utils.js functions are now available globally
 // Make sure utils.js is loaded before this script
 
-const budget = 300;
-
-function getPriceAmazon(){
-    const grandTotal = document.querySelector('.grand-total-cell');
-
-    if (!grandTotal) {
-        console.log('Grand total element not found');
-        return 0;
-    }
-    
-    console.log('Grand total element found:', grandTotal);
-    console.log('Grand total innerHTML:', grandTotal.innerHTML);
-    
-    const priceClass = 'order-summary-line-definition';
-    const priceClass2 = 'breakword';
-
-    // Method 1: Your current approach (querySelector with class)
-    let priceElement = grandTotal.querySelector(`.${priceClass}`);
-    
-    // Method 2: If class doesn't work, try finding by tag and content
-    if (!priceElement) {
-        priceElement = grandTotal.querySelector('span, div, td');
-        console.log('Trying alternative selectors...');
-    }
-    
-    /*const allDescendants = grandTotal.querySelectorAll('*');
-    console.log('All descendant elements:', allDescendants);
-    allDescendants.forEach((el, index) => {
-        console.log(`Element ${index}:`, el.tagName, el.className, el.innerText);
-    });*/
-    
-    if (priceElement) {
-        console.log('Price element found:', priceElement);
-        //console.log('Price text:', priceElement.innerText);
-        const price = parseFloat(priceElement.innerText.replace(/[^0-9.-]+/g,""));
-        //console.log('Parsed price:', price);
-        return price;
-    }
-    
-    console.log('No price element found');
-    return 0;
-}
-
-function findOrderTotal() {
-    // A list of common price IDs and Classes across the web
-    const priceSelectors = [
-        '#total-price',                // Keychron / Shopify
-        '.total-recap__final-price',   // International Shopify
-        '#sc-buy-box-ptb-button-value',// Amazon Sidebar
-        '.grand-total-price',
-        '.grand-total-cell',          // Generic stores
-        '.order-total .price',         // WooCommerce
-        '[data-checkout-payment-due-target]' // Shopify Data Attribute
-    ];
-
-    for (let selector of priceSelectors) {
-        const element = document.querySelector(selector);
-        if (element) {
-            const text = element.innerText || element.textContent;
-            // Extract numbers and decimals only (e.g., "$126.00" -> 126.00)
-            const numericPrice = parseFloat(text.replace(/[^0-9.-]+/g, ""));
-            
-            if (!isNaN(numericPrice) && numericPrice > 0) {
-                return numericPrice;
-            }
-        }
-    }
-    return null;
-}
+const BUDGET = 300;
 
 
 // 2. Add a Title and the Canvas
@@ -109,12 +41,12 @@ function init() {
     console.log('Total amount found:', totalAmount);
     if (totalAmount) {
         console.log("Price Detected:", totalAmount);
-        // Call your function that creates the UI and the Pie Chart
+
         //showBudgetImpact(totalAmount);
         const overlayTitle = document.getElementById('overlayTitle');
         overlayTitle.appendChild(document.createTextNode(`You are spending $${totalAmount.toFixed(2)}.`)); 
 
-        const pUsed = calculateBudgetRisk(budget, totalAmount);
+        const pUsed = calculateBudgetRisk(BUDGET, totalAmount);
         const riskText = document.getElementById('budgetStatus');
 
         const riskU = getRiskLevel(pUsed);
